@@ -1,5 +1,6 @@
 streamlit
-chromadb[duckdb]
+chromadb[duckdb]  # Use the DuckDB version of ChromaDB
+duckdb
 google-generativeai
 openai
 pydub
@@ -11,4 +12,3 @@ scikit-learn
 pillow
 ffmpeg
 torchaudio
-duckdb
