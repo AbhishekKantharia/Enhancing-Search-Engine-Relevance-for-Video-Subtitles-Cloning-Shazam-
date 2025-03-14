@@ -1,5 +1,5 @@
 streamlit
-chromadb
+chromadb[duckdb]
 google-generativeai
 openai
 pydub
@@ -11,3 +11,4 @@ scikit-learn
 pillow
 ffmpeg
 torchaudio
+duckdb
