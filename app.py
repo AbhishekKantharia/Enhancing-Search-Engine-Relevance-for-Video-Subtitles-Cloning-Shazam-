@@ -8,7 +8,6 @@ import json
 import numpy as np
 from pydub import AudioSegment
 from sklearn.metrics.pairwise import cosine_similarity
-import chromadb
 
 # --- Configurations ---
 GOOGLE_GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"
