@@ -8,11 +8,14 @@ import json
 import numpy as np
 from pydub import AudioSegment
 from sklearn.metrics.pairwise import cosine_similarity
+import chromadb
 
 # --- Configurations ---
 GOOGLE_GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"
 genai.configure(api_key=GOOGLE_GEMINI_API_KEY)
-chroma_client = chromadb.PersistentClient(path="./chroma_db")
+
+# Use DuckDB instead of SQLite (fix for Streamlit Cloud)
+chroma_client = chromadb.PersistentClient(path="./chroma_db", settings={"chroma_db_impl": "duckdb"})
 collection = chroma_client.get_or_create_collection(name="subtitle_embeddings")
 
 # Load Whisper model for speech-to-text conversion
