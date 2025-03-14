@@ -1,12 +1,9 @@
 streamlit
-faiss-cpu
 google-generativeai
-openai
 pydub
-torch
-torchaudio
 numpy
 pandas
 scikit-learn
 pillow
 ffmpeg
+torchaudio
