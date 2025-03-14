@@ -1,6 +1,5 @@
 streamlit
-chromadb[duckdb]  # Use the DuckDB version of ChromaDB
-duckdb
+faiss-cpu
 google-generativeai
 openai
 pydub
