@@ -20,14 +20,29 @@ INDEX_FILE = "faiss_index.pkl"
 index = faiss.IndexFlatL2(VECTOR_DIMENSION)
 metadata = {}
 
-# --- Step 1: Read Subtitle Data from Database ---
-def load_subtitles(limit=5000):
-    """Loads compressed subtitles from the SQLite database."""
+# --- Step 1: Verify and Load Subtitle Data from Database ---
+def get_table_name():
+    """Fetches the actual table name in the database."""
     conn = sqlite3.connect(DB_FILE)
-    query = f"SELECT num, name, content FROM zipfiles LIMIT {limit}"
-    df = pd.read_sql_query(query, conn)
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    tables = [t[0] for t in cursor.fetchall()]
     conn.close()
 
+    if not tables:
+        raise Exception("No tables found in the database!")
+    
+    return tables[0]  # Return the first table found
+
+TABLE_NAME = get_table_name()
+
+def load_subtitles(limit=5000):
+    """Loads compressed subtitles from the actual table in the database."""
+    conn = sqlite3.connect(DB_FILE)
+    query = f"SELECT num, name, content FROM {TABLE_NAME} LIMIT {limit}"
+    df = pd.read_sql_query(query, conn)
+    conn.close()
+    
     subtitles = []
     for _, row in df.iterrows():
         subtitle_id = row["num"]
@@ -35,7 +50,6 @@ def load_subtitles(limit=5000):
         binary_content = row["content"]
 
         try:
-            # Decompress and decode subtitle text
             decoded_text = zlib.decompress(binary_content).decode("latin-1")
             subtitles.append((subtitle_id, file_name, decoded_text))
         except Exception as e:
