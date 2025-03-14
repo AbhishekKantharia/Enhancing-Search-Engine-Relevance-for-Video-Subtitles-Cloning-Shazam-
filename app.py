@@ -9,10 +9,17 @@ import numpy as np
 from pydub import AudioSegment
 from sklearn.metrics.pairwise import cosine_similarity
 import shutil
+import chromadb
 
 # --- Configurations ---
 GOOGLE_GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"
 genai.configure(api_key=GOOGLE_GEMINI_API_KEY)
+
+# ✅ Explicitly tell ChromaDB to use DuckDB instead of SQLite
+chroma_client = chromadb.PersistentClient(path="./chroma_db", 
+    settings={"chroma_db_impl": "duckdb+parquet"}
+)
+collection = chroma_client.get_or_create_collection(name="subtitle_embeddings")
 
 # DELETE existing ChromaDB database (Only run once)
 shutil.rmtree("./chroma_db", ignore_errors=True)
