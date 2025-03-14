@@ -8,6 +8,11 @@ import json
 import numpy as np
 from pydub import AudioSegment
 from sklearn.metrics.pairwise import cosine_similarity
+import shutil
+
+# DELETE existing ChromaDB database (Only run once)
+shutil.rmtree("./chroma_db", ignore_errors=True)
+print("Old ChromaDB database deleted!")
 
 # --- Configurations ---
 GOOGLE_GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"
