@@ -10,10 +10,6 @@ from pydub import AudioSegment
 from sklearn.metrics.pairwise import cosine_similarity
 import shutil
 
-# DELETE existing ChromaDB database (Only run once)
-shutil.rmtree("./chroma_db", ignore_errors=True)
-print("Old ChromaDB database deleted!")
-
 # --- Configurations ---
 GOOGLE_GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"
 genai.configure(api_key=GOOGLE_GEMINI_API_KEY)
@@ -21,6 +17,10 @@ genai.configure(api_key=GOOGLE_GEMINI_API_KEY)
 # Use DuckDB instead of SQLite (fix for Streamlit Cloud)
 chroma_client = chromadb.PersistentClient(path="./chroma_db", settings={"chroma_db_impl": "duckdb"})
 collection = chroma_client.get_or_create_collection(name="subtitle_embeddings")
+
+# DELETE existing ChromaDB database (Only run once)
+shutil.rmtree("./chroma_db", ignore_errors=True)
+print("Old ChromaDB database deleted!")
 
 # Load Whisper model for speech-to-text conversion
 device = "cuda" if torch.cuda.is_available() else "cpu"
