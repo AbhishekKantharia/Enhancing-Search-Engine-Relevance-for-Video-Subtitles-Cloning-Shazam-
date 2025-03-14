@@ -3,11 +3,10 @@ faiss-cpu
 google-generativeai
 openai
 pydub
-whisper
 torch
+torchaudio
 numpy
 pandas
 scikit-learn
 pillow
 ffmpeg
-torchaudio
