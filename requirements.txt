@@ -1,10 +1,6 @@
 streamlit
-chromadb
 google-generativeai
-openai
 pydub
-whisper
-torch
 numpy
 pandas
 scikit-learn
