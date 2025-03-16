@@ -10,12 +10,12 @@ genai.configure(api_key=GOOGLE_GEMINI_API_KEY)
 st.title("🎬 AI-Powered Subtitle Search Engine")
 
 # Increase file uploader size
-st.write("🔹 Maximum Upload Size: 1GB")
+st.write("🔹 Maximum Upload Size: 2 GB")
 
-uploaded_file = st.file_uploader("Upload an audio file", type=["mp3", "wav", "m4a"])
+uploaded_file = st.file_uploader("Upload an audio file", type=["mp3", "wav", "m4a", "db"])
 
 if uploaded_file is not None:
-    st.audio(uploaded_file, format="audio/mp3")
+    st.audio(uploaded_file, format="audio/mp3/mp4/db")
 
     # Save file to disk
     audio_path = f"temp_{uploaded_file.name}"
