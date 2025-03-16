@@ -1,7 +1,13 @@
 streamlit
-faiss-cpu
+chromadb
 google-generativeai
+openai
+pydub
+whisper
+torch
 numpy
 pandas
-pydub
-requests
+scikit-learn
+pillow
+ffmpeg
+torchaudio
