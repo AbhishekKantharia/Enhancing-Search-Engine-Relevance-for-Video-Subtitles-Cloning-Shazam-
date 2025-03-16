@@ -20,15 +20,15 @@ def transcribe_audio_google(audio_path):
 
 st.title("🎬 AI-Powered Subtitle Search Engine")
 
-uploaded_file = st.file_uploader("Upload an audio file", type=["mp3", "wav", "m4a"])
+uploaded_file = st.file_uploader("Upload an audio file", type=["mp3", "wav", "m4a", "db"])
 
 if uploaded_file is not None:
-    st.audio(uploaded_file, format="audio/mp3")
+    st.audio(uploaded_file, format="audio/mp3/db")
 
     # Convert audio to WAV format
     audio = AudioSegment.from_file(uploaded_file)
-    audio_path = "temp_audio.wav"
-    audio.export(audio_path, format="wav")
+    audio_path = "temp_audio.mp3"
+    audio.export(audio_path, format="mp3")
 
     with st.spinner("Transcribing audio using Google Gemini..."):
         query_text = transcribe_audio_google(audio_path)
