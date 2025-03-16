@@ -1,11 +1,11 @@
-import streamlit as st
+import os
 import sqlite3
+import streamlit as st
 import faiss
 import numpy as np
 import google.generativeai as genai
 import pandas as pd
 import pickle
-import os
 import zlib
 
 # --- Configurations ---
@@ -19,7 +19,12 @@ INDEX_FILE = "faiss_index.pkl"
 index = faiss.IndexFlatL2(VECTOR_DIMENSION)
 metadata = {}
 
-# --- Step 1: Find the Correct Table Name ---
+# --- Step 1: Check If Database Exists ---
+if not os.path.exists(DB_FILE):
+    st.error("❌ ERROR: The database file `eng_subtitles_database.db` is missing!")
+    st.stop()
+
+# --- Step 2: Check Available Tables ---
 def get_table_name():
     """Finds the actual table name in the database."""
     conn = sqlite3.connect(DB_FILE)
@@ -29,14 +34,15 @@ def get_table_name():
     conn.close()
 
     if not tables:
-        raise Exception("No tables found in the database!")
+        st.error("❌ ERROR: No tables found in the database!")
+        st.stop()
 
-    print(f"✅ Found tables: {tables}")
+    st.write(f"✅ Found tables: {tables}")
     return tables[0]  # Use the first available table
 
 TABLE_NAME = get_table_name()
 
-# --- Step 2: Load Subtitle Data ---
+# --- Step 3: Load Subtitle Data ---
 def load_subtitles(limit=5000):
     """Loads compressed subtitles from the detected table."""
     conn = sqlite3.connect(DB_FILE)
@@ -55,18 +61,18 @@ def load_subtitles(limit=5000):
             decoded_text = zlib.decompress(binary_content).decode("latin-1")
             subtitles.append((subtitle_id, file_name, decoded_text))
         except Exception as e:
-            print(f"❌ Error decoding subtitle {file_name}: {e}")
+            st.warning(f"❌ Error decoding subtitle {file_name}: {e}")
     
     return subtitles
 
-# --- Step 3: Preprocess Subtitle Data ---
+# --- Step 4: Preprocess Subtitle Data ---
 def clean_subtitle(text):
     """Removes timestamps and unnecessary lines from subtitle text."""
     lines = text.split("\n")
     cleaned_lines = [line.strip() for line in lines if "-->" not in line]
     return " ".join(cleaned_lines)
 
-# --- Step 4: Generate Embeddings ---
+# --- Step 5: Generate Embeddings ---
 def get_embedding(text):
     """Uses Google Gemini API to generate text embeddings."""
     response = genai.embed_content(
@@ -76,7 +82,7 @@ def get_embedding(text):
     )
     return np.array(response["embedding"]).reshape(1, -1)
 
-# --- Step 5: Store Embeddings in FAISS ---
+# --- Step 6: Store Embeddings in FAISS ---
 def store_embeddings(subtitle_data):
     """Stores embeddings in FAISS for fast retrieval."""
     global index, metadata
@@ -97,19 +103,19 @@ def store_embeddings(subtitle_data):
     with open(INDEX_FILE, "wb") as f:
         pickle.dump((index, metadata), f)
 
-    print("✅ Stored subtitle embeddings in FAISS!")
+    st.success("✅ Stored subtitle embeddings in FAISS!")
 
-# --- Step 6: Load and Process Data (Run Once) ---
+# --- Step 7: Load and Process Data (Run Once) ---
 if not os.path.exists(INDEX_FILE):
-    print("🔍 Processing subtitles and generating embeddings...")
+    st.write("🔍 Processing subtitles and generating embeddings...")
     subtitles = load_subtitles(limit=5000)
     store_embeddings(subtitles)
 else:
-    print("✅ Loading existing FAISS index...")
+    st.write("✅ Loading existing FAISS index...")
     with open(INDEX_FILE, "rb") as f:
         index, metadata = pickle.load(f)
 
-# --- Step 7: Search Function ---
+# --- Step 8: Search Function ---
 def search_subtitles(query, top_k=5):
     """Searches for the most relevant subtitles using FAISS."""
     query_embedding = get_embedding(query)
@@ -129,7 +135,7 @@ def search_subtitles(query, top_k=5):
 
     return results
 
-# --- Step 8: Streamlit UI ---
+# --- Step 9: Streamlit UI ---
 st.title("🎬 AI-Powered Subtitle Search Engine")
 st.markdown("**Search for subtitles using natural language queries!**")
 
