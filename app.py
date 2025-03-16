@@ -1,101 +1,37 @@
-import os
-import sqlite3
 import streamlit as st
-import faiss
-import numpy as np
 import google.generativeai as genai
-import pandas as pd
-import pickle
-import zlib
+import chromadb
+import whisper
+import torch
+import os
+import json
+import numpy as np
+from pydub import AudioSegment
+from sklearn.metrics.pairwise import cosine_similarity
 
 # --- Configurations ---
-DB_FILE = "eng_subtitles_database.db"
 GOOGLE_GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"
 genai.configure(api_key=GOOGLE_GEMINI_API_KEY)
+chroma_client = chromadb.PersistentClient(path="./chroma_db")
+collection = chroma_client.get_or_create_collection(name="subtitle_embeddings")
 
-# FAISS Index Configuration
-VECTOR_DIMENSION = 768  # Google Gemini embedding size
-INDEX_FILE = "faiss_index.pkl"
-index = faiss.IndexFlatL2(VECTOR_DIMENSION)
-metadata = {}
+# Load Whisper model for speech-to-text conversion
+device = "cuda" if torch.cuda.is_available() else "cpu"
+whisper_model = whisper.load_model("base", device=device)
 
-# --- Step 1: Upload Database if Missing ---
-st.title("🎬 AI Subtitle Search - Upload Database")
+# --- Helper Functions ---
+def preprocess_text(text):
+    """Basic cleaning for subtitle text."""
+    return text.replace("\n", " ").replace("[", "").replace("]", "").strip()
 
-if not os.path.exists(DB_FILE):
-    st.warning("⚠️ Database not found! Please upload `eng_subtitles_database.db` to continue.")
-    
-    uploaded_file = st.file_uploader("Upload your `.db` file", type="db")
-    
-    if uploaded_file is not None:
-        with open(DB_FILE, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        st.success("✅ Database uploaded successfully! Please restart the app.")
-        st.stop()
-    else:
-        st.stop()  # Stop execution until a file is uploaded
+def chunk_text(text, chunk_size=500, overlap=100):
+    """Splits text into overlapping chunks."""
+    words = text.split()
+    chunks = []
+    for i in range(0, len(words), chunk_size - overlap):
+        chunks.append(" ".join(words[i : i + chunk_size]))
+    return chunks
 
-# --- Step 2: Verify Database File Size ---
-def check_database_file():
-    """Ensures the database file is valid."""
-    file_size = os.path.getsize(DB_FILE)
-    st.write(f"📂 Database file size: {file_size} bytes")
-    
-    if file_size < 1000:  # Too small for a real database
-        st.error("❌ ERROR: The database file is too small! Please upload a valid file.")
-        st.stop()
-
-check_database_file()
-
-# --- Step 3: Check Available Tables ---
-def get_table_name():
-    """Finds the actual table name in the database."""
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = cursor.fetchall()
-    conn.close()
-
-    if not tables:
-        st.error("❌ ERROR: No tables found in the database! Please upload a correct file.")
-        st.stop()
-
-    st.write(f"✅ Found Tables: {tables}")
-    return tables[0][0]  # Use the first available table
-
-TABLE_NAME = get_table_name()
-
-# --- Step 4: Load Subtitle Data ---
-def load_subtitles(limit=5000):
-    """Loads compressed subtitles from the detected table."""
-    conn = sqlite3.connect(DB_FILE)
-    query = f"SELECT num, name, content FROM {TABLE_NAME} LIMIT {limit}"
-    df = pd.read_sql_query(query, conn)
-    conn.close()
-
-    subtitles = []
-    for _, row in df.iterrows():
-        subtitle_id = row["num"]
-        file_name = row["name"]
-        binary_content = row["content"]
-
-        try:
-            # Decompress and decode subtitle text
-            decoded_text = zlib.decompress(binary_content).decode("latin-1")
-            subtitles.append((subtitle_id, file_name, decoded_text))
-        except Exception as e:
-            st.warning(f"❌ Error decoding subtitle {file_name}: {e}")
-    
-    return subtitles
-
-# --- Step 5: Preprocess Subtitle Data ---
-def clean_subtitle(text):
-    """Removes timestamps and unnecessary lines from subtitle text."""
-    lines = text.split("\n")
-    cleaned_lines = [line.strip() for line in lines if "-->" not in line]
-    return " ".join(cleaned_lines)
-
-# --- Step 6: Generate Embeddings ---
 def get_embedding(text):
     """Uses Google Gemini API to generate text embeddings."""
     response = genai.embed_content(
@@ -103,77 +39,65 @@ def get_embedding(text):
         content=text,
         task_type="retrieval_document"
     )
-    return np.array(response["embedding"]).reshape(1, -1)
+    return response["embedding"]
 
-# --- Step 7: Store Embeddings in FAISS ---
 def store_embeddings(subtitle_data):
-    """Stores embeddings in FAISS for fast retrieval."""
-    global index, metadata
+    """Stores embeddings in ChromaDB."""
+    for idx, doc in enumerate(subtitle_data):
+        text = preprocess_text(doc["text"])
+        chunks = chunk_text(text)
+        for chunk in chunks:
+            embedding = get_embedding(chunk)
+            collection.add(
+                ids=[f"doc_{idx}_{chunk[:10]}"],  # Unique ID
+                embeddings=[embedding],
+                metadatas=[{"text": chunk}]
+            )
 
-    for subtitle_id, file_name, content in subtitle_data:
-        cleaned_text = clean_subtitle(content)
-        embedding = get_embedding(cleaned_text)
+def transcribe_audio(audio_path):
+    """Transcribes audio into text using Whisper."""
+    audio = whisper.load_audio(audio_path)
+    result = whisper_model.transcribe(audio)
+    return result["text"]
 
-        # Store in FAISS
-        index.add(embedding)
-        metadata[len(metadata)] = {
-            "subtitle_id": subtitle_id,
-            "file_name": file_name,
-            "text": cleaned_text,
-        }
-
-    # Save FAISS index and metadata
-    with open(INDEX_FILE, "wb") as f:
-        pickle.dump((index, metadata), f)
-
-    st.success("✅ Stored subtitle embeddings in FAISS!")
-
-# --- Step 8: Load and Process Data (Run Once) ---
-if not os.path.exists(INDEX_FILE):
-    st.write("🔍 Processing subtitles and generating embeddings...")
-    subtitles = load_subtitles(limit=5000)
-    store_embeddings(subtitles)
-else:
-    st.write("✅ Loading existing FAISS index...")
-    with open(INDEX_FILE, "rb") as f:
-        index, metadata = pickle.load(f)
-
-# --- Step 9: Search Function ---
-def search_subtitles(query, top_k=5):
-    """Searches for the most relevant subtitles using FAISS."""
-    query_embedding = get_embedding(query)
-    distances, indices = index.search(query_embedding, top_k)
+def search_subtitles(query_text):
+    """Searches subtitles using embeddings and cosine similarity."""
+    query_embedding = get_embedding(query_text)
+    results = collection.query(
+        query_embeddings=[query_embedding], 
+        n_results=5  # Fetch top 5 results
+    )
     
-    results = []
-    for i in range(len(indices[0])):
-        meta = metadata.get(indices[0][i], {})
-        if meta:
-            results.append({
-                "score": distances[0][i],
-                "subtitle_id": meta["subtitle_id"],
-                "file_name": meta["file_name"],
-                "text": meta["text"][:500],  # Show only first 500 characters
-                "link": f"https://www.opensubtitles.org/en/subtitles/{meta['subtitle_id']}"
-            })
+    # Sort results by cosine similarity
+    sorted_results = sorted(
+        zip(results["ids"], results["distances"], results["metadatas"]),
+        key=lambda x: x[1], reverse=True
+    )
 
-    return results
+    return [res[2]["text"] for res in sorted_results]
 
-# --- Step 10: Streamlit UI ---
-st.title("🎬 AI-Powered Subtitle Search Engine")
-st.markdown("**Search for subtitles using natural language queries!**")
+# --- Streamlit UI ---
+st.title("Video Subtitle Search Engine")
 
-query = st.text_input("Enter a movie scene description:")
+uploaded_file = st.file_uploader("Upload a 2-minute audio clip", type=["mp3", "wav", "m4a"])
 
-if st.button("Search"):
-    with st.spinner("Searching..."):
-        results = search_subtitles(query)
+if uploaded_file is not None:
+    st.audio(uploaded_file, format="audio/mp3")
 
-    st.subheader("🔍 Top Matching Subtitles:")
-    if results:
-        for res in results:
-            st.markdown(f"**🎬 {res['file_name']}**")
-            st.markdown(f"🔗 [View on OpenSubtitles]({res['link']})")
-            st.write(f"📜 {res['text']}...")
-            st.write(f"🔥 Score: {res['score']}")
-    else:
-        st.warning("No matching subtitles found!")
+    # Convert audio to WAV format if needed
+    audio = AudioSegment.from_file(uploaded_file)
+    audio_path = "temp_audio.wav"
+    audio.export(audio_path, format="wav")
+
+    # Transcribe and search
+    with st.spinner("Transcribing audio..."):
+        query_text = transcribe_audio(audio_path)
+    
+    st.write("Transcribed Text:", query_text)
+
+    with st.spinner("Searching subtitles..."):
+        results = search_subtitles(query_text)
+
+    st.subheader("Top Matching Subtitles:")
+    for idx, result in enumerate(results):
+        st.write(f"**{idx + 1}.** {result}")
