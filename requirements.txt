@@ -4,3 +4,4 @@ google-generativeai
 numpy
 pandas
 pydub
+requests
