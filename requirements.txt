@@ -4,5 +4,4 @@ google-generativeai
 numpy
 pandas
 pydub
-zlib
 sqlite3
