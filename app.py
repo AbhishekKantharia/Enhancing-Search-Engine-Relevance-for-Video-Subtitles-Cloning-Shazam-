@@ -3,7 +3,7 @@ import sqlite3
 import requests
 import streamlit as st
 
-# Google Drive file ID
+# Google Drive File ID
 GDRIVE_FILE_ID = "1bKx176TVlxQbMEFuDyzSBmceLapQYHT8"
 DB_FILE = "eng_subtitles_database.db"
 
@@ -27,7 +27,23 @@ def download_database():
 # Step 2: Run the database download check
 download_database()
 
-# Step 3: Verify if database contains tables
+# Step 3: Verify if the database file size is valid
+def check_database_file():
+    """Checks if the database file is valid (not empty)."""
+    if not os.path.exists(DB_FILE):
+        st.error("❌ Database file does not exist!")
+        st.stop()
+
+    file_size = os.path.getsize(DB_FILE)
+    st.write(f"📂 Database file size: {file_size} bytes")
+    
+    if file_size < 1000:  # Too small for a real database
+        st.error("❌ ERROR: The database file is too small! The download may have failed.")
+        st.stop()
+
+check_database_file()
+
+# Step 4: Check if the database contains tables
 def check_database():
     """Checks if the database contains any tables."""
     conn = sqlite3.connect(DB_FILE)
