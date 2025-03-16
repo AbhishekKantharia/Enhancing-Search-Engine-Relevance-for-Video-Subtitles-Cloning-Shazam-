@@ -3,6 +3,6 @@ faiss-cpu
 google-generativeai
 numpy
 pandas
-chardet
 pydub
+zlib
 sqlite3
