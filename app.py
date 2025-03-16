@@ -11,23 +11,39 @@ import zlib
 # --- Configurations ---
 DB_FILE = "eng_subtitles_database.db"
 GOOGLE_GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"
-TABLE_NAME = "zipfiles"  # Confirmed table name
 genai.configure(api_key=GOOGLE_GEMINI_API_KEY)
 
 # FAISS Index Configuration
-VECTOR_DIMENSION = 768  # Gemini embedding size
+VECTOR_DIMENSION = 768  # Google Gemini embedding size
 INDEX_FILE = "faiss_index.pkl"
 index = faiss.IndexFlatL2(VECTOR_DIMENSION)
 metadata = {}
 
-# --- Step 1: Load Subtitle Data ---
+# --- Step 1: Find the Correct Table Name ---
+def get_table_name():
+    """Finds the actual table name in the database."""
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    tables = [t[0] for t in cursor.fetchall()]
+    conn.close()
+
+    if not tables:
+        raise Exception("No tables found in the database!")
+
+    print(f"✅ Found tables: {tables}")
+    return tables[0]  # Use the first available table
+
+TABLE_NAME = get_table_name()
+
+# --- Step 2: Load Subtitle Data ---
 def load_subtitles(limit=5000):
-    """Loads compressed subtitles from the database."""
+    """Loads compressed subtitles from the detected table."""
     conn = sqlite3.connect(DB_FILE)
     query = f"SELECT num, name, content FROM {TABLE_NAME} LIMIT {limit}"
     df = pd.read_sql_query(query, conn)
     conn.close()
-    
+
     subtitles = []
     for _, row in df.iterrows():
         subtitle_id = row["num"]
@@ -39,18 +55,18 @@ def load_subtitles(limit=5000):
             decoded_text = zlib.decompress(binary_content).decode("latin-1")
             subtitles.append((subtitle_id, file_name, decoded_text))
         except Exception as e:
-            print(f"Error decoding subtitle {file_name}: {e}")
+            print(f"❌ Error decoding subtitle {file_name}: {e}")
     
     return subtitles
 
-# --- Step 2: Preprocess Subtitle Data ---
+# --- Step 3: Preprocess Subtitle Data ---
 def clean_subtitle(text):
-    """Removes timestamps and unnecessary lines."""
+    """Removes timestamps and unnecessary lines from subtitle text."""
     lines = text.split("\n")
     cleaned_lines = [line.strip() for line in lines if "-->" not in line]
     return " ".join(cleaned_lines)
 
-# --- Step 3: Generate Embeddings ---
+# --- Step 4: Generate Embeddings ---
 def get_embedding(text):
     """Uses Google Gemini API to generate text embeddings."""
     response = genai.embed_content(
@@ -60,7 +76,7 @@ def get_embedding(text):
     )
     return np.array(response["embedding"]).reshape(1, -1)
 
-# --- Step 4: Store Embeddings in FAISS ---
+# --- Step 5: Store Embeddings in FAISS ---
 def store_embeddings(subtitle_data):
     """Stores embeddings in FAISS for fast retrieval."""
     global index, metadata
@@ -83,15 +99,17 @@ def store_embeddings(subtitle_data):
 
     print("✅ Stored subtitle embeddings in FAISS!")
 
-# --- Load and Process Data (Run Once) ---
+# --- Step 6: Load and Process Data (Run Once) ---
 if not os.path.exists(INDEX_FILE):
+    print("🔍 Processing subtitles and generating embeddings...")
     subtitles = load_subtitles(limit=5000)
     store_embeddings(subtitles)
 else:
+    print("✅ Loading existing FAISS index...")
     with open(INDEX_FILE, "rb") as f:
         index, metadata = pickle.load(f)
 
-# --- Step 5: Search Function ---
+# --- Step 7: Search Function ---
 def search_subtitles(query, top_k=5):
     """Searches for the most relevant subtitles using FAISS."""
     query_embedding = get_embedding(query)
@@ -111,7 +129,7 @@ def search_subtitles(query, top_k=5):
 
     return results
 
-# --- Step 6: Streamlit UI ---
+# --- Step 8: Streamlit UI ---
 st.title("🎬 AI-Powered Subtitle Search Engine")
 st.markdown("**Search for subtitles using natural language queries!**")
 
