@@ -19,22 +19,25 @@ INDEX_FILE = "faiss_index.pkl"
 index = faiss.IndexFlatL2(VECTOR_DIMENSION)
 metadata = {}
 
-# --- Step 1: Check If Database Exists, Else Ask for Upload ---
+# --- Step 1: Upload Database if Missing ---
+st.title("🎬 AI Subtitle Search - Upload Database")
+
 if not os.path.exists(DB_FILE):
     st.warning("⚠️ Database not found! Please upload `eng_subtitles_database.db` to continue.")
-
-    uploaded_file = st.file_uploader("Upload eng_subtitles_database.db", type="db")
+    
+    uploaded_file = st.file_uploader("Upload your `.db` file", type="db")
+    
     if uploaded_file is not None:
         with open(DB_FILE, "wb") as f:
             f.write(uploaded_file.getbuffer())
         st.success("✅ Database uploaded successfully! Please restart the app.")
         st.stop()
     else:
-        st.stop()  # Stop execution until database is uploaded
+        st.stop()  # Stop execution until a file is uploaded
 
 # --- Step 2: Verify Database File Size ---
 def check_database_file():
-    """Checks if the database file is valid (not empty)."""
+    """Ensures the database file is valid."""
     file_size = os.path.getsize(DB_FILE)
     st.write(f"📂 Database file size: {file_size} bytes")
     
