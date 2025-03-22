@@ -1,9 +1,0 @@
-streamlit
-google-generativeai
-pydub
-numpy
-pandas
-scikit-learn
-pillow
-ffmpeg
-torchaudio
