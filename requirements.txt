@@ -1,29 +1,48 @@
-# Core Libraries
-streamlit
+# Core Dependencies
+python-dotenv==1.0.1
+streamlit==1.33.0
+pandas==2.2.1
+numpy==1.26.4
+requests==2.31.0
+tqdm==4.66.2
+pillow==10.2.0
 
-# Machine Learning & AI
-torch
-torchaudio
-torchvision
-transformers
-whisper  # OpenAI Whisper model for transcription
+# PyTorch (Choose CPU or GPU)
+torch==2.2.0
+torchaudio==2.2.0
+# Use the following if you have a CUDA-compatible NVIDIA GPU:
+# torch==2.2.0+cu121 --index-url https://download.pytorch.org/whl/cu121
 
-# LLM & Embeddings
-langchain
-langchain-google-genai
-google-generativeai
-sentence-transformers  # Embeddings for ChromaDB
+# OpenAI Whisper for Speech-to-Text
+openai-whisper==20231117
+ffmpeg-python==0.2.0  # Required for Whisper audio processing
+
+# Google Gemini LLM API
+langchain==0.1.13
+langchain_google_genai==0.0.9
 
 # Vector Database (ChromaDB)
-sentence-transformers
-chromadb
+chromadb==0.4.24
+pysqlite3-binary==0.5.2  # Fix for SQLite dependency issues
 
-# Fix for SQLite issues in ChromaDB
-sqlite3
+# HuggingFace Embeddings for NLP Processing
+sentence-transformers==2.6.1
+langchain-huggingface==0.0.8
 
-# Data Processing
-pandas
-numpy
+# Text Processing & Parsing
+textblob==0.18.0
+nltk==3.8.1
+regex==2023.12.25
 
-# File Handling & Utils
-pytube  # Optional: For downloading YouTube videos
+# PDF & File Handling (if needed)
+pdfplumber==0.10.3
+PyMuPDF==1.23.3
+
+# Web Scraping (if needed)
+beautifulsoup4==4.12.3
+lxml==5.1.0
+
+# Fix for Markdown Issues in Streamlit
+markdown-it-py==3.0.0
+mdurl==0.1.2
+rich==13.7.1
