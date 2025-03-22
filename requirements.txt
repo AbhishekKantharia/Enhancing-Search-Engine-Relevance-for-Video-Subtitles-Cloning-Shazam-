@@ -4,18 +4,22 @@ streamlit
 # Machine Learning & AI
 torch
 torchaudio
+torchvision
 transformers
 whisper  # OpenAI Whisper model for transcription
 
 # LLM & Embeddings
 langchain
 langchain-google-genai
-langchain-huggingface
+google-generativeai
 sentence-transformers  # Embeddings for ChromaDB
 
 # Vector Database (ChromaDB)
+sentence-transformers
 chromadb
-pysqlite3  # Fix for SQLite issues in ChromaDB
+
+# Fix for SQLite issues in ChromaDB
+sqlite3
 
 # Data Processing
 pandas
