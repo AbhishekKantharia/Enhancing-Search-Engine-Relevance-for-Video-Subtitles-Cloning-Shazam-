@@ -1,69 +1,109 @@
-# 🎬 AI-Powered Subtitle Search Engine  
+# 🎙️ Movie Subtitle Search via Audio (Whisper + ChromaDB + Gemini AI)
 
-## 📌 Overview
+This project transcribes audio files using OpenAI's **Whisper**, then searches for relevant **movie subtitles** stored in a **ChromaDB** vector database. **Google Gemini AI** enhances subtitle extraction and matching.
 
-This project enables **AI-powered subtitle search** by matching video subtitles with user-uploaded **audio queries**. It leverages:
+---
 
-- **Google Gemini API** for text embeddings
-- **Whisper ASR** for speech-to-text conversion
-- **ChromaDB** for storing and retrieving subtitle embeddings
-- **Streamlit** for a user-friendly interface
+## 🚀 Steps to Run the Project
 
-## 🚀 Features
-✅ Upload an **audio clip (MP3/WAV/M4A)**
-✅ Convert speech to text using **Whisper ASR**
-✅ Generate **semantic embeddings** using **Google Gemini API**
-✅ Retrieve and rank **matching subtitles** using **cosine similarity**
-✅ Display the **top relevant subtitles**
-
-## 🛠️ Installation
-
-### 1️⃣ Clone the Repository
+### **1️⃣ Install Dependencies**
+Run the following command to install all required Python libraries:
 
 ```sh
-git clone https://github.com/your-repo/subtitle-search-engine.git
-cd subtitle-search-engine
+pip install torch whisper sentence-transformers chromadb numpy scikit-learn google-generativeai
 ```
 
-### 2️⃣ Install Dependencies
+---
+
+### **2️⃣ Install & Verify FFmpeg (Required for Whisper)**
+Whisper requires **FFmpeg** to process audio files. Install and check it using:
 
 ```sh
-pip install -r requirements.txt
+sudo apt update
+sudo apt install ffmpeg
+ffmpeg -version  # Ensure FFmpeg is installed
 ```
 
-### 3️⃣ Set Up Google Gemini API
+---
 
-Get your **Google Gemini API key** and add it to your environment variables:
+### **3️⃣ Set Up ChromaDB for Subtitle Storage**
+Initialize **ChromaDB** for efficient search:
+
+```python
+import chromadb
+
+chroma_client = chromadb.PersistentClient(path="./subtitle_chromadb")
+collection = chroma_client.create_collection(name="subtitles")
+```
+
+---
+
+### **4️⃣ Transcribe an Audio File**
+Use OpenAI's Whisper model to convert speech to text:
+
+```python
+transcript = transcribe_audio_whisper("your_audio_file.mp3")
+print(transcript)
+```
+
+---
+
+### **5️⃣ Search for Matching Movies Based on Subtitles**
+
+Retrieve the top **5** most similar movies:
+
+```python
+find_movie_by_subtitle(transcript, top_k=5)
+```
+
+---
+
+### **6️⃣ Enable Google Gemini AI for Improved Matching**
+
+Sign up for **Google Gemini API**, get your API key, and configure it:
+
+```python
+import google.generativeai as genai
+genai.configure(api_key="YOUR_GEMINI_API_KEY")
+```
+
+---
+
+### **7️⃣ Convert Audio Format (If Needed)**
+
+If your audio file isn't working, convert it to a compatible format using FFmpeg:
 
 ```sh
-export GOOGLE_API_KEY="your_api_key_here"
+ffmpeg -i your_audio.mp3 -ar 16000 -ac 1 -c:a pcm_s16le output.wav
+```
+Then, update your Python script to use `output.wav`.
+
+---
+
+### **8️⃣ Run Everything Together**
+
+```python
+AUDIO_PATH = "your_audio_file.mp3"
+transcript_text = transcribe_audio_whisper(AUDIO_PATH)
+
+if transcript_text:
+    find_movie_by_subtitle(transcript_text, top_k=10, similarity_threshold=0.5)
+else:
+    print("❌ No transcript generated. Check the audio file!")
 ```
 
-### 4️⃣ Run the Application
+---
 
-```sh
-streamlit run app.py
+## 🛠 Troubleshooting
+
+### ❌ "Failed to load audio: FFmpeg error"
+✔️ **Solution**: Reinstall FFmpeg and convert the audio format (Step 7).
+
+### ❌ "No matching subtitles found!"
+✔️ **Solution**: Increase `top_k` or lower `similarity_threshold` in `find_movie_by_subtitle()`.
+
+---
+
+## 📜 License
+MIT License.
 ```
-
-## 📂 Project Structure
-
-```
-📁 subtitle-search-engine
-│── 📄 app.py                 # Main Streamlit app
-│── 📄 requirements.txt       # Required dependencies
-│── 📄 README.md              # Project documentation
-│── 📁 data                   # Subtitle database files
-│── 📁 embeddings             # ChromaDB embeddings
-```
-
-## 🔥 Future Enhancements
-
-- 🎭 **Multi-language support**  
-- 🎞️ **Real-time video subtitle matching**  
-- 📡 **Cloud-based deployment**  
-
-## 📜 License  
-
-This project is open-source under the **MIT License**.  
-
-🚀 **Contributions Welcome!** Feel free to fork and improve the project!
