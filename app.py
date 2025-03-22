@@ -12,9 +12,6 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import RetrievalQA
 import sqlite3
 
-# ✅ Override sqlite3 module to avoid ChromaDB issues
-
-
 # ✅ Constants
 CHROMA_DB_DIR = "./chroma_db"
 DATASET_DIR = "dataset"
@@ -25,7 +22,6 @@ GOOGLE_API_KEY = "YOUR_GEMINI_API_KEY"  # 🔹 Replace with a secure way to stor
 # ✅ Ensure required directories exist
 os.makedirs(CHROMA_DB_DIR, exist_ok=True)
 os.makedirs(DATASET_DIR, exist_ok=True)
-
 
 # ✅ Lazy Initialization Functions
 @st.cache_resource
