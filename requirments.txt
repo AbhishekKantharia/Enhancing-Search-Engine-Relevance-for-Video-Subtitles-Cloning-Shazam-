@@ -1,0 +1,25 @@
+# Core Libraries
+streamlit
+
+# Machine Learning & AI
+torch
+torchaudio
+transformers
+whisper  # OpenAI Whisper model for transcription
+
+# LLM & Embeddings
+langchain
+langchain-google-genai
+langchain-huggingface
+sentence-transformers  # Embeddings for ChromaDB
+
+# Vector Database (ChromaDB)
+chromadb
+pysqlite3  # Fix for SQLite issues in ChromaDB
+
+# Data Processing
+pandas
+numpy
+
+# File Handling & Utils
+pytube  # Optional: For downloading YouTube videos
