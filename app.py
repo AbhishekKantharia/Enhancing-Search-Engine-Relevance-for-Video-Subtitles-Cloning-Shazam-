@@ -4,16 +4,16 @@ import streamlit as st
 import torch
 import torchaudio
 import whisper
-import pysqlite3  # ✅ Fix for ChromaDB sqlite3 issue
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import RetrievalQA
+import sqlite3
 
 # ✅ Override sqlite3 module to avoid ChromaDB issues
-sys.modules["sqlite3"] = pysqlite3
+
 
 # ✅ Constants
 CHROMA_DB_DIR = "./chroma_db"
